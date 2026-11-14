@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en-AU">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="theme-color" content="#0e1a20">
+<meta name="robots" content="noindex">
+<link rel="icon" href="data:,">
+<title>Pelvic floor AR</title>
+<link rel="stylesheet" href="styles.css" onerror="this.remove()">
+<link rel="stylesheet" href="src/ar.css">
+<script type="importmap">
+{ "imports": {
+  "three": "./vendor/three/three.module.js",
+  "three/addons/": "./vendor/three/addons/",
+  "mindar-image-three": "./vendor/mindar/mindar-image-three.prod.js"
+} }
+</script>
+</head>
+<body class="ar-page">
+
+<!-- MindAR mounts its <video> and WebGL canvas in here (kept under the UI) -->
+<div id="ar-stage" aria-hidden="true"></div>
+<!-- The experience (src/scenes.js) builds its HTML overlay in here; empty areas let touches through to the stage -->
+<div id="ui-root"></div>
+
+<!-- AR chrome -->
+<div id="ar-chrome" hidden>
+  <a id="three-d-only" href="viewer.html">3D only</a>
+  <button id="freeze" type="button" aria-pressed="false">Freeze</button>
+  <div id="hint" role="status" aria-live="polite">
+    <div class="hint-frame"></div>
+    <div class="hint-title">Point at a sheet</div>
+    <div class="hint-sub">Keep the sheet in the top half of the screen</div>
+  </div>
+</div>
+
+<!-- Pre-permission screen -->
+<main id="intro">
+  <div class="intro-card">
+    <div class="eyebrow">Interactive AR explainer</div>
+    <h1>Your pelvic floor, in 3D</h1>
+    <ol class="steps">
+      <li><b>Tap Start AR.</b></li>
+      <li><b>Allow the camera</b> when your phone asks.</li>
+      <li><b>Point your phone</b> at one of the printed sheets and a 3D model appears on the paper.</li>
+    </ol>
+    <button id="start" type="button" disabled>Loading&hellip;</button>
+    <a class="alt" href="viewer.html">No camera? Explore in 3D</a>
+    <p class="fine">The camera picture stays on your phone. Nothing is recorded or sent anywhere. General information only, not medical advice.</p>
+  </div>
+</main>
+
+<!-- Starting camera -->
+<div id="starting" hidden role="status"><div class="spinner"></div><div>Starting the camera&hellip;</div></div>
+
+<!-- In-app browser warning -->
+<div id="inapp" hidden role="dialog" aria-modal="true" aria-labelledby="inapp-title">
+  <div class="intro-card">
+    <h1 id="inapp-title">Open in your phone's browser</h1>
+    <p>This app's built-in browser often blocks the camera. For AR, open this page in <b>Safari</b> (iPhone) or <b>Chrome</b> (Android).</p>
+    <p class="how">Tap the menu (&hellip; or share icon), then <b>Open in browser</b>. Or copy the link and paste it into Safari or Chrome.</p>
+    <button id="copy-link" type="button">Copy link</button>
+    <output id="copy-state" aria-live="polite"></output>
+    <a class="alt" href="viewer.html">Explore in 3D instead</a>
+    <button id="inapp-try" type="button" class="quiet">Try AR here anyway</button>
+  </div>
+</div>
+
+<!-- Landscape guard -->
+<div id="rotate"><div>Turn your phone upright</div></div>
+
+<script>
+// Registered from a classic script so the shell still gets cached if the module graph fails.
+(function () {
+  var q = new URLSearchParams(location.search);
+  var local = /^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname);
+  if ('serviceWorker' in navigator && (!local || q.get('sw') === '1')) {
+    navigator.serviceWorker.register('sw.js').catch(function () {});
+  }
+  // Any failure to load the AR module graph (old browser, no import maps, network) -> 3D-only viewer
+  window.__arFail = function () { location.replace('viewer.html?notice=camera'); };
+  window.addEventListener('error', function (e) {
+    if (!window.__arBooted && e && e.message && /import|module|specifier|Unexpected token|export/i.test(e.message)) window.__arFail();
+  });
+})();
+</script>
+<script type="module" src="src/ar.js" onerror="window.__arFail()"></script>
+</body>
+</html>

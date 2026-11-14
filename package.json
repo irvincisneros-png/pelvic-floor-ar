@@ -1,0 +1,33 @@
+{
+  "name": "pelvic-floor-ar",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "markers": "node tools/make-markers.mjs",
+    "compile": "node tools/compile-targets.mjs",
+    "qr": "node tools/make-qr.mjs",
+    "sheets": "node tools/make-sheets.mjs",
+    "build:all": "npm run markers && npm run compile && npm run qr && npm run sheets",
+    "test:ar": "node tools/test-ar.mjs",
+    "test:ar:stub": "node tools/test-ar.mjs --stub"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "mind-ar": "^1.2.5",
+    "three": "^0.160.0"
+  },
+  "devDependencies": {
+    "meshoptimizer": "^1.3.0",
+    "pdf-lib": "^1.17.1",
+    "playwright-core": "^1.65.0",
+    "qrcode": "^1.5.4",
+    "sharp": "^0.35.5"
+  },
+  "private": true
+}

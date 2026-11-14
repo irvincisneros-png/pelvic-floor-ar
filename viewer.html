@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en-AU">
+<head>
+<link rel="icon" href="data:,">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+  <meta name="theme-color" content="#11161d">
+  <title>Pelvic floor: explore in 3D</title>
+  <style>html{height:100%;background:#11161d}</style>
+  <link rel="stylesheet" href="styles.css">
+  <script type="importmap">
+  { "imports": { "three": "./vendor/three/three.module.js", "three/addons/": "./vendor/three/addons/" } }
+  </script>
+</head>
+<body class="pf-viewer">
+  <div id="stage"></div>
+  <nav class="pf-tabs" id="tabs" aria-label="Choose a sheet"></nav>
+  <div id="ui-root"></div>
+  <noscript>This 3D explainer needs JavaScript.</noscript>
+  <script type="module" src="src/viewer.js"></script>
+</body>
+</html>

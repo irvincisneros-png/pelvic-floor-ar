@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>MindAR target compiler</title></head>
+<body>
+<pre id="log">compiling...</pre>
+<script type="module">
+// Browser-side MindAR compile. Driven by tools/compile-targets.mjs (headless Chrome).
+import { Compiler } from '../vendor/mindar/mindar-image.prod.js';
+
+const log = (m) => { document.getElementById('log').textContent += '\n' + m; };
+window.__compile = async (urls) => {
+  const images = await Promise.all(urls.map((u) => new Promise((res, rej) => {
+    const i = new Image(); i.onload = () => res(i); i.onerror = () => rej(new Error('load ' + u)); i.src = u;
+  })));
+  const compiler = new Compiler();
+  let last = -1;
+  await compiler.compileImageTargets(images, (p) => { const q = Math.floor(p / 10); if (q !== last) { last = q; log(`progress ${p.toFixed(0)}%`); } });
+  const buf = compiler.exportData();
+  // feature stats from the matching keyframes (full-resolution octave = largest width)
+  const stats = compiler.data.map((d, i) => {
+    const key = d.matchingData.slice().sort((a, b) => b.width - a.width)[0];
+    const pts = [...key.maximaPoints, ...key.minimaPoints].map((p) => ({ x: p.x, y: p.y }));
+    return {
+      target: i, width: d.targetImage.width, height: d.targetImage.height,
+      keyframes: d.matchingData.length,
+      total: d.matchingData.reduce((s, k) => s + k.maximaPoints.length + k.minimaPoints.length, 0),
+      fullRes: pts.length, keyW: key.width, keyH: key.height, pts,
+      tracking: d.trackingData.map((t) => (t.points ? t.points.length : 0)),
+    };
+  });
+  let bin = ''; const bytes = new Uint8Array(buf);
+  for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
+  return { b64: btoa(bin), stats };
+};
+window.__ready = true;
+</script>
+</body></html>
