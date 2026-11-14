@@ -265,8 +265,8 @@ export function makeMaterials() {
   const capM = (kind, tube, nopush, urOpen, lumenLo) => makeMaterial({ kind, color: 0xffffff, roughness: 0.85, vertexColors: true, capFace: true, tube, nopush, urOpen, lumen: tube ? 1 : 0, lumenLo });
   return {
     bone: makeMaterial(bone),
-    pr: makeMaterial({ kind: 1, color: COL.pr, roughness: 0.4, cap: 0x5e1220, fibre: true, rim: 0xffb0a0, rimAmt: 0.3, hotK: 1 }),
-    pcm: makeMaterial({ kind: 1, color: COL.pcm, roughness: 0.42, cap: 0x7a2a24, fibre: true, rim: 0xffb8a8, rimAmt: 0.28, hotK: 0.9 }),
+    pr: makeMaterial({ kind: 1, color: COL.pr, roughness: 0.4, cap: 0x5e1220, fibre: true, rim: 0xffb0a0, rimAmt: 0.3, hotK: 0.7, avulK: 1 }),
+    pcm: makeMaterial({ kind: 1, color: COL.pcm, roughness: 0.42, cap: 0x7a2a24, fibre: true, rim: 0xffb8a8, rimAmt: 0.28, hotK: 1, avulK: 1 }),
     ic: makeMaterial({ kind: 1, color: COL.ic, roughness: 0.48, cap: 0x9a5a48, fibre: true, arcus: true, rim: 0xffd6c8, rimAmt: 0.25, hotK: 0.2 }),
     cocc: makeMaterial({ kind: 1, color: COL.cocc, roughness: 0.46, cap: 0x7a4a2c, fibre: true, arcus: true, rim: 0xffc8a8, rimAmt: 0.25 }),
     fascia: makeMaterial({ kind: 1, color: COL.fascia, roughness: 0.35, cap: 0xd8c0b4, fascia: true, transparent: true, opacity: 0.12, depthWrite: false, rim: 0xffffff, rimAmt: 0.4 }),

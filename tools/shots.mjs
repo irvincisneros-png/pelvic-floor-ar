@@ -35,6 +35,8 @@ export const SHOTS = [
   { name: 'birth-after', scene: 'birth', js: `click('After birth')` },
   { name: 'birth-avulsion-below', scene: 'birth', js: `click('After birth'); d.T.avulsion = 1; d.setView('below', true)` },
   { name: 'birth-avulsion-3d', scene: 'birth', js: `click('After birth'); d.T.avulsion = 1; d.setView('3d', true); d.setOrgans('hide')` },
+  { name: 'birth-avulsion-toggle', scene: 'birth', js: `click('After birth'); click('Muscle pulled off the bone (avulsion)'); d.setView('below', true); d.ui.toggleSheet(false)` },
+  { name: 'train-expanded', scene: 'solutions', js: `d.ui.toggleSheet(false)` },
   { name: 'train-rest', scene: 'solutions', js: `` },
   { name: 'train-squeeze', scene: 'solutions', js: `d.T.contraction = 1` },
   { name: 'train-bearing-down', scene: 'solutions', js: `d.T.contraction = -1` },

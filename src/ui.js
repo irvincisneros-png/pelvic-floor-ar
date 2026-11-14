@@ -143,7 +143,8 @@ export class PfUI {
     if (!this.labels.size) return;
     for (const [id, l] of this.labels) {
       const p = pts.get(id), show = !!(p && p.vis);
-      l.pin.style.display = show ? '' : 'none'; l.chip.style.display = show ? '' : 'none';
+      // the chip list stays usable while the model is off screen or tracking is lost; a chip only goes when its part is hidden
+      l.pin.style.display = show ? '' : 'none'; l.chip.style.display = !p || p.avail !== false ? '' : 'none';
       if (show) { l.pin.style.transform = `translate(${p.x.toFixed(1)}px, ${p.y.toFixed(1)}px)`; }
     }
     const sel = this.selected && this.labels.get(this.selected), p = sel && pts.get(this.selected);
@@ -202,19 +203,28 @@ export class PfUI {
   }
   _drawer(title, body, id) {
     const close = h('button', { type: 'button', class: 'pf-x big', 'aria-label': 'Close ' + title, text: '×', onClick: () => this.closeDrawers() });
-    const d = h('div', { class: 'pf-drawer drawer', 'data-ui': '', 'data-drawer': id, role: 'dialog', 'aria-label': title, 'aria-hidden': 'true' },
+    const d = h('div', { class: 'pf-drawer drawer', 'data-ui': '', 'data-drawer': id, role: 'dialog', 'aria-modal': 'true', 'aria-label': title, 'aria-hidden': 'true', inert: true, tabindex: '-1' },
       h('div', { class: 'pf-drawer-h' }, h('div', { class: 'pf-drawer-t', text: title }), close), h('div', { class: 'pf-drawer-b' }, body));
+    d._close = close;
+    d.addEventListener('keydown', (e) => { if (e.key === 'Escape') { e.stopPropagation(); this.closeDrawers(); } });
     return d;
   }
+  _behind(on) { for (const el of [this.top, this.sheet, this.labelLayer]) { if (on) el.setAttribute('inert', ''); else el.removeAttribute('inert'); } }
   openDrawer(id) {
-    this.closeDrawers();
+    const opener = this._opener || document.activeElement;
+    this.closeDrawers(false);
     const d = id === 'ask' ? this.askDrawer : this.aboutDrawer;
-    d.classList.add('open'); d.setAttribute('aria-hidden', 'false');
+    d.classList.add('open'); d.setAttribute('aria-hidden', 'false'); d.removeAttribute('inert');
     this.wrap.classList.add('drawer-open');
+    this._opener = opener; this._behind(true);
+    try { d._close.focus({ preventScroll: true }); } catch (e) { /* not focusable yet */ }
   }
-  closeDrawers() {
-    for (const d of [this.askDrawer, this.aboutDrawer]) { d.classList.remove('open'); d.setAttribute('aria-hidden', 'true'); }
-    this.wrap.classList.remove('drawer-open');
+  closeDrawers(restore = true) {
+    const wasOpen = this.wrap.classList.contains('drawer-open');
+    for (const d of [this.askDrawer, this.aboutDrawer]) { d.classList.remove('open'); d.setAttribute('aria-hidden', 'true'); d.setAttribute('inert', ''); }
+    this.wrap.classList.remove('drawer-open'); this._behind(false);
+    if (wasOpen && restore && this._opener && this._opener.isConnected) { try { this._opener.focus({ preventScroll: true }); } catch (e) { /* ignore */ } }
+    if (restore) this._opener = null;
   }
 
   // ---------------------------------------------------------------- pacer widget
@@ -228,5 +238,5 @@ export class PfUI {
     return { el, ring, phase, sub, breath, bar: bar.firstChild };
   }
 
-  dispose() { this._ro && this._ro.disconnect(); this.wrap.remove(); }
+  dispose() { this._ro && this._ro.disconnect(); clearTimeout(this._tt); clearTimeout(this._bt); this.wrap.remove(); }
 }

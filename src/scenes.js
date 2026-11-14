@@ -137,7 +137,8 @@ export async function createExperience({ uiRoot, camera, domElement, startCollap
       const c = SC.birth || {};
       reset(); ui.setHeader(c.title); model.setFasciaVisible(false); setView('side');
       const steps = c.steps || [], types = c.birthTypes || [], rec = c.recovery || [];
-      let step = 'before', recovery = 0, avul = false, type = types[0]?.id;
+      let step = 'before', recovery = 0, avul = false, type = types[0]?.id, avulShown = null;
+      const info = ui.makeInfo();
       const stepRo = ui.readout(), recRo = ui.readout(), typeRo = ui.readout();
       const avBox = h('div', { class: 'pf-sec' }), recBox = h('div', { class: 'pf-sec' });
       const apply = () => {
@@ -152,7 +153,12 @@ export async function createExperience({ uiRoot, camera, domElement, startCollap
         avBox.style.display = step === 'after' ? '' : 'none'; recBox.style.display = step === 'after' ? '' : 'none';
         const r = recovery > 0.83 ? rec[2] : recovery > 0.5 ? rec[1] : recovery > 0.17 ? rec[0] : null;
         recRo.set(r ? r.label : '', r ? r.text : '');
-        setLabelItems(step === 'after' && avul ? [{ id: 'avulsion', name: 'Gap at the bone', text: c.avulsion?.text, term: c.avulsion?.label }] : []);
+        const showAv = step === 'after' && avul;   // only rebuild the pin when it appears or goes, so dragging the recovery slider keeps the card open
+        if (showAv !== avulShown) {
+          avulShown = showAv; selectLabel(null);
+          setLabelItems(showAv ? [{ id: 'avulsion', name: 'Gap at the bone', text: c.avulsion?.text, term: c.avulsion?.label }] : []);
+          if (showAv) selectLabel('avulsion');
+        }
       };
       const stepSeg = ui.segmented(steps.map((s) => ({ id: s.id, label: s.label })), step, (id) => {
         step = id; if (id !== 'after') { recovery = 0; recSl.set(0); }
@@ -163,7 +169,7 @@ export async function createExperience({ uiRoot, camera, domElement, startCollap
       avBox.append(avT.el); recBox.append(h('div', { class: 'pf-sec-h', text: 'Recovery over time' }), recSl.el, recRo.el);
       const typeSeg = ui.segmented(types.map((t) => ({ id: t.id, label: t.label.replace(/ \(.*\)/, '').replace('Vaginal birth, no instruments', 'No instruments') })), type, (id) => { const t = types.find((x) => x.id === id); typeRo.set(t?.label, t?.text); }, 'wrap');
       typeRo.set(types[0]?.label, types[0]?.text);
-      ui.add(ui.takeaway(c.takeaway), ui.section('Step', stepSeg.el, stepRo.el), avBox, recBox, viewControl(), ui.section('Birth type and avulsion risk', typeSeg.el, typeRo.el));
+      ui.add(info, ui.takeaway(c.takeaway), ui.section('Step', stepSeg.el, stepRo.el), avBox, recBox, viewControl(), ui.section('Birth type and avulsion risk', typeSeg.el, typeRo.el));
       apply();
     },
 
@@ -192,7 +198,7 @@ export async function createExperience({ uiRoot, camera, domElement, startCollap
         pacer.t += dt;
         let p = pacer.ph[pacer.i];
         while (p && pacer.t >= p.dur) { pacer.t -= p.dur; pacer.i++; p = pacer.ph[pacer.i]; }
-        if (!p) { stopPacer(); pc.phase.textContent = 'Well done'; pc.sub.textContent = `Aim for ${prog.perDay || 3} sessions a day`; return; }
+        if (!p) { stopPacer(); pc.phase.textContent = 'Well done'; pc.sub.textContent = `Up to ${prog.perDay || 3} sessions a day is a common guide`; return; }
         const f = pacer.t / p.dur; let lvl = 0, label = '';
         if (p.k === 'squeeze') { lvl = ease(f); label = 'Squeeze and lift'; }
         else if (p.k === 'hold') { lvl = 1; label = 'Hold'; }
@@ -222,12 +228,12 @@ export async function createExperience({ uiRoot, camera, domElement, startCollap
         h('ul', { class: 'pf-cues' }, (c.getHelp || []).map((t) => h('li', { text: t }))),
         hl.name ? h('div', {}, h('div', { class: 'pf-sub', text: hl.name }), hl.phone ? h('a', { class: 'pf-phone', href: 'tel:' + String(hl.phone).replace(/\s+/g, ''), text: hl.phone }) : null, hl.note ? h('p', { text: hl.note }) : null) : null);
       ui.add(ui.takeaway(c.takeaway),
-        ui.section('Guided exercise', pc.el, startBtn),
+        ui.section('Guided exercise', c.program?.caution ? h('p', { class: 'pf-note', text: c.program.caution }) : null, pc.el, startBtn),
         viewControl(),
         ui.section('', h('p', { class: 'pf-sub', text: c.program?.text }), h('ul', { class: 'pf-cues' }, cues.map((t) => h('li', { text: t })))),
         ui.section('', mT.el, mistBox),
         ui.section(c.knack?.label || 'The Knack', ui.card('', c.knack?.text), knackBtn),
-        ui.section('Train it, then test it', weeks.el, coughControl()),
+        ui.section('Train it, then test it', c.trainNote ? h('p', { class: 'pf-note', text: c.trainNote }) : null, weeks.el, coughControl()),
         c.timeline ? ui.card('How long does it take?', c.timeline) : null, help);
     },
   };
@@ -273,9 +279,10 @@ export async function createExperience({ uiRoot, camera, domElement, startCollap
     camera.updateMatrixWorld();
     pts.clear();
     for (const it of labelItems) {
-      const p = vis && (it.id === 'avulsion' || model.pinVisible(it.id)) ? model.projectAnchor(it.id, camera, _v) : null;
+      const avail = it.id === 'avulsion' || model.pinVisible(it.id);
+      const p = vis && avail ? model.projectAnchor(it.id, camera, _v) : null;
       const ok = p && p.z > -1 && p.z < 1 && Math.abs(p.x) < 1.1 && Math.abs(p.y) < 1.1;
-      pts.set(it.id, ok ? { x: (p.x * 0.5 + 0.5) * W, y: (-p.y * 0.5 + 0.5) * H, vis: true } : { vis: false });
+      pts.set(it.id, ok ? { x: (p.x * 0.5 + 0.5) * W, y: (-p.y * 0.5 + 0.5) * H, vis: true, avail } : { vis: false, avail });
     }
     ui.updateLabels(pts, W, H, (experience.layout.top || 0) + 6, experience.layout.bottom || 0);
   }

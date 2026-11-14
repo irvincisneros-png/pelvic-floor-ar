@@ -50,9 +50,9 @@ node tools/test-ar.mjs --real       # same against src/scenes.js
 
 ## Service worker
 
-`sw.js` precaches the shell, the vendor files that are used and `markers/targets.mind`. Vendor and targets are cache-first; the shell
-is served from cache and refreshed in the background; everything else is network-first with cache fallback. Bump `CACHE_VERSION` in `sw.js`
-on each deploy. All URLs are resolved against the SW scope, so it works under `/pelvic-floor-ar/`.
+`sw.js` downloads every app file into one versioned cache at install (failing if any is missing) and then serves those files only from that cache,
+so a phone never runs a mix of old and new files. `sw-register.js` applies a waiting update with one reload, but only before the visitor has
+touched the page; otherwise it waits for the next visit. Bump `CACHE_VERSION` in `sw.js` on every deploy.
 
 ## Publishing notes
 

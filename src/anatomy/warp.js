@@ -91,7 +91,7 @@ export function warpPoint(kind, p, pf, axis, F, tube = { k: 0, w: 0, lum: 0 }, p
     x = x + (dx * s - dx) * wgt; y = y + (dy * s - dy) * wgt; z = z + (dz * s - dz) * wgt;
   }
   if (kind === 1) {
-    const av = F.avul * (1 - sstep(0, 0.35, ext)) * sstep(0, 1.5, -p[0]) * (1 - 0.6 * rad);
+    const av = F.avul * (1 - sstep(0, 0.35, ext)) * sstep(0, 1.5, -p[0]) * (1 - sstep(0.35, 1, rad));
     x -= 1.7 * av; y -= 1.5 * av; z -= 3.3 * av;
   }
   return [x, y, z];
@@ -103,7 +103,7 @@ export function warpGLSL() {
   const ufields = FIELD_NAMES.map((n) => `uniform float F_${n};`).join('\n');
   return `
 ${ufields}
-uniform float uTubeK; uniform float uTubeW; uniform float uLumenK; uniform float uLumenLo; uniform float uUrOpen;
+uniform float uTubeK; uniform float uTubeW; uniform float uLumenK; uniform float uLumenLo; uniform float uUrOpen; uniform float uAvulK;
 attribute vec3 aOff; attribute vec4 aPf; attribute vec3 aAxis;
 vec3 pfWarp(vec3 p, vec3 off) {
   float mob = aPf.x; float rad = aPf.y; float ext = aPf.z;
@@ -143,7 +143,8 @@ vec3 pfWarp(vec3 p, vec3 off) {
     q += (hd * (hrn / max(hr, 0.001)) - hd) * smoothstep(0.3, 1.2, F_headR);
   #endif
   #if PF_KIND == 1
-    float av = F_avul * (1.0 - smoothstep(0.0, 0.35, ext)) * smoothstep(0.0, 1.5, -p.x) * (1.0 - 0.6 * rad);
+    // only the muscles that attach to the pubic bone (uAvulK), and only their inner part: the outer rim stays anchored
+    float av = F_avul * uAvulK * (1.0 - smoothstep(0.0, 0.35, ext)) * smoothstep(0.0, 1.5, -p.x) * (1.0 - smoothstep(0.35, 1.0, rad));
     q += vec3(-1.7, -1.5, -3.3) * av;
   #endif
   return q + off;

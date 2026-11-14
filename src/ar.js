@@ -48,6 +48,10 @@ function fail(err) {
 }
 window.addEventListener('unhandledrejection', (e) => { if (started) fail(e.reason); });
 
+// Coming back through the back-forward cache (after opening a source link, say) restores a page whose camera was
+// stopped on pagehide. Reload so the visitor gets a working Start button instead of a dead view.
+window.addEventListener('pageshow', (e) => { if (e.persisted && started) location.reload(); });
+
 // ---------- wake lock ----------
 let wakeLock = null;
 async function requestWakeLock() {
@@ -81,6 +85,7 @@ $('start').addEventListener('click', () => {
       uiLoading: 'no', uiScanning: 'no', uiError: 'no',
       filterMinCF: 0.0005, filterBeta: 500, warmupTolerance: 3, missTolerance: 8,
     });
+    if (!mindar.renderer.capabilities.isWebGL2) throw new Error('WebGL2 not available');
     mindar.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
     const startPromise = mindar.start();
     $('starting').hidden = false;
@@ -264,9 +269,8 @@ async function run(mindar, startPromise) {
         // Adaptive tilt: seen from the side the model stands on the paper; hovering straight above, it lies back
         // on the page so the viewer still looks at its front rather than down on top of it.
         const e = holder.matrix.elements, L = lastDistance || 1;
-        const cu = -(tmpV.x * e[4] + tmpV.y * e[5] + tmpV.z * e[6]) / (L * Math.hypot(e[4], e[5], e[6]));   // camera direction along page-up
-        const cn = -(tmpV.x * e[8] + tmpV.y * e[9] + tmpV.z * e[10]) / (L * Math.hypot(e[8], e[9], e[10])); // ... along the sheet normal
-        const elev = Math.atan2(cn, -cu);                                // 0 = level with the bottom edge, PI/2 = straight above
+        const cn = -(tmpV.x * e[8] + tmpV.y * e[9] + tmpV.z * e[10]) / (L * Math.hypot(e[8], e[9], e[10])); // camera direction along the sheet normal
+        const elev = Math.asin(Math.min(1, Math.abs(cn)));               // height above the sheet plane, whichever edge the viewer stands at: 0 = level, PI/2 = straight above
         const want = THREE.MathUtils.smoothstep(elev, 0.52, 1.36) * (Math.PI / 2);
         tilt += (want - tilt) * (1 - Math.exp(-dt * 5));
         placer.quaternion.setFromAxisAngle(X_AXIS, Math.PI / 2 - tilt);
@@ -283,7 +287,7 @@ async function run(mindar, startPromise) {
     lastFrameAt = now;
     if (gaps.length === 90 && quality > 0 && now - qualityAt > 4000) {
       const sorted = [...gaps].sort((x, y) => x - y), median = sorted[45];
-      if (median > 42) { quality--; qualityAt = now; gaps.length = 0; renderer.setPixelRatio(quality === 1 ? Math.min(window.devicePixelRatio || 1, 1.15) : 0.85); }
+      if (median > 36) { quality--; qualityAt = now; gaps.length = 0; renderer.setPixelRatio(quality === 1 ? Math.min(window.devicePixelRatio || 1, 1.15) : 0.85); }
     }
   });
 
@@ -295,6 +299,8 @@ async function run(mindar, startPromise) {
   requestWakeLock();
   try { screen.orientation && screen.orientation.lock && screen.orientation.lock('portrait').catch(() => {}); } catch (e) { /* needs fullscreen on most browsers */ }
   window.addEventListener('pagehide', () => { try { mindar.stop(); } catch (e) { /* ignore */ } releaseWakeLock(); });
+  // The camera stream can be ended by the browser (another app took it, permission revoked): start again cleanly.
+  try { for (const t of (mindar.video && mindar.video.srcObject ? mindar.video.srcObject.getVideoTracks() : [])) t.addEventListener('ended', () => { if (document.visibilityState === 'visible') location.reload(); }); } catch (e) { /* ignore */ }
 
   // read-only state for tests/debugging
   window.__arState = () => ({

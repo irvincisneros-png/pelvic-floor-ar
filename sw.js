@@ -1,11 +1,17 @@
-// Service worker: precache shell + vendor + targets (cache-first), network-first for everything else.
-// Bump CACHE_VERSION whenever deployed files change so old caches are dropped.
-const CACHE_VERSION = 'v2';
+// Service worker: one complete, versioned copy of the site per release.
+// - Install downloads EVERY file below into a new cache and fails if any is missing, so a release is never half-cached.
+// - Precached files are then served only from that cache (no per-file background refresh), so old and new files never mix.
+// - A new release waits until the page asks for it (sw-register.js does so before the visitor has started) or until
+//   every tab is closed. Bump CACHE_VERSION on EVERY deploy that changes a listed file.
+const CACHE_VERSION = 'v3';
 const CACHE = `pelvic-floor-ar-${CACHE_VERSION}`;
 const BASE = new URL('./', self.registration.scope); // works under any subpath
 
-// Immutable-ish heavy files: pure cache-first.
-const STATIC = [
+const PRECACHE = [
+  'index.html', 'viewer.html', 'styles.css', 'sw-register.js', 'src/ar.css', 'src/ar.js',
+  'src/scenes.js', 'src/ui.js', 'src/viewer.js', 'src/content.js',
+  'src/anatomy/model.js', 'src/anatomy/parts.js', 'src/anatomy/geom.js', 'src/anatomy/materials.js', 'src/anatomy/warp.js',
+  'src/anatomy/noise.js', 'src/anatomy/bones.js', 'src/anatomy/bones.bin', 'src/anatomy/fetus.bin',
   'markers/targets.mind',
   'vendor/three/three.module.js',
   'vendor/three/addons/renderers/CSS3DRenderer.js',
@@ -15,26 +21,22 @@ const STATIC = [
   'vendor/mindar/controller-mGt1s8dJ.js',
   'vendor/mindar/ui-fBadYuor.js',
 ];
-// App shell: served from cache, refreshed in the background (so a deploy shows up on the next visit).
-const SHELL = [
-  './', 'index.html', 'viewer.html', 'styles.css', 'src/ar.css', 'src/ar.js',
-  'src/scenes.js', 'src/ui.js', 'src/viewer.js', 'src/content.js',
-  'src/anatomy/model.js', 'src/anatomy/parts.js', 'src/anatomy/geom.js', 'src/anatomy/materials.js', 'src/anatomy/warp.js',
-  'src/anatomy/noise.js', 'src/anatomy/bones.js', 'src/anatomy/bones.bin', 'src/anatomy/fetus.bin',
-];
 const url = (p) => new URL(p, BASE).href;
 
 self.addEventListener('install', (event) => {
   event.waitUntil((async () => {
     const cache = await caches.open(CACHE);
-    // Tolerant: a file that does not exist (yet) must not fail the install.
-    await Promise.allSettled([...STATIC, ...SHELL].map(async (p) => {
+    await Promise.all(PRECACHE.map(async (p) => {
       const res = await fetch(url(p), { cache: 'reload' });
-      if (res.ok) await cache.put(url(p), res);
+      if (!res.ok) throw new Error(`precache ${p}: ${res.status}`);
+      await cache.put(url(p), res);
     }));
-    await self.skipWaiting();
-  })());
+    // First ever install: nothing older to clash with, so take over straight away.
+    if (!self.registration.active) await self.skipWaiting();
+  })().catch(async (e) => { await caches.delete(CACHE); throw e; }));
 });
+
+self.addEventListener('message', (event) => { if (event.data === 'skipWaiting') self.skipWaiting(); });
 
 self.addEventListener('activate', (event) => {
   event.waitUntil((async () => {
@@ -43,38 +45,16 @@ self.addEventListener('activate', (event) => {
   })());
 });
 
-async function networkFirst(req) {
-  const cache = await caches.open(CACHE);
-  try {
-    const res = await fetch(req);
-    if (res.ok && res.type === 'basic') cache.put(req, res.clone());
-    return res;
-  } catch (err) {
-    const hit = await cache.match(req, { ignoreSearch: true });
-    if (hit) return hit;
-    throw err;
-  }
-}
-
 self.addEventListener('fetch', (event) => {
   const req = event.request;
   if (req.method !== 'GET') return;
   const u = new URL(req.url);
   if (u.origin !== location.origin || !u.pathname.startsWith(BASE.pathname)) return;
-  const rel = u.pathname.slice(BASE.pathname.length); // query string ignored for routing
+  let rel = u.pathname.slice(BASE.pathname.length); // query string ignored for routing
+  if (rel === '') rel = 'index.html';
+  if (!PRECACHE.includes(rel)) return;              // everything else: plain network
   event.respondWith((async () => {
-    const cache = await caches.open(CACHE);
-    if (STATIC.includes(rel)) {
-      const hit = await cache.match(url(rel));
-      if (hit) return hit;
-      return networkFirst(req);
-    }
-    if (SHELL.includes(rel) || rel === '') {
-      const hit = await cache.match(rel === '' ? url('index.html') : url(rel), { ignoreSearch: rel === '' || rel === 'index.html' || rel === 'viewer.html' });
-      const refresh = fetch(req).then((res) => { if (res.ok && res.type === 'basic') cache.put(rel === '' ? url('index.html') : url(rel), res.clone()); return res; });
-      if (hit) { refresh.catch(() => {}); return hit; }
-      return refresh;
-    }
-    return networkFirst(req);
+    const hit = await (await caches.open(CACHE)).match(url(rel));
+    return hit || fetch(req);
   })());
 });

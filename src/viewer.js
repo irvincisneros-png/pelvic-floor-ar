@@ -8,14 +8,25 @@ const uiRoot = document.getElementById('ui-root');
 const tabsEl = document.getElementById('tabs');
 const params = new URLSearchParams(location.search);
 
-const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: 'high-performance' });
+function sorry(msg) {
+  document.body.insertAdjacentHTML('beforeend', `<p role="alert" style="position:fixed;top:72px;left:16px;right:16px;color:#fff;font:16px/1.4 system-ui,sans-serif">${msg}</p>`);
+}
+let renderer;
+try {
+  renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: 'high-performance' });
+  if (!renderer.capabilities.isWebGL2) throw new Error('WebGL2 not available');
+} catch (e) {
+  console.error(e);
+  sorry('Sorry, this browser cannot show the 3D model. Try updating your phone, or open this page in a current version of Safari or Chrome.');
+  throw e;
+}
 renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
 stage.appendChild(renderer.domElement);
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(34, 1, 0.05, 40);
 const TARGET = new THREE.Vector3(0, 0.34, 0);
 const controls = new OrbitControls(camera, renderer.domElement);
-controls.target.copy(TARGET); controls.enablePan = false; controls.enableDamping = true; controls.dampingFactor = 0.08;
+controls.target.copy(TARGET); controls.enablePan = true; controls.screenSpacePanning = true; controls.enableDamping = true; controls.dampingFactor = 0.08;
 controls.minDistance = 0.9; controls.maxDistance = 7; controls.rotateSpeed = 0.8;
 
 let exp = null, userMoved = false, layout = { bottom: 0, top: 0 };
@@ -90,4 +101,4 @@ async function main() {
     window.__pf.info = { triangles: renderer.info.render.triangles, calls: renderer.info.render.calls };
   });
 }
-main().catch((e) => { console.error(e); document.body.insertAdjacentHTML('beforeend', '<p style="position:fixed;top:60px;left:12px;right:12px;color:#fff">Sorry, the 3D viewer could not start on this device.</p>'); });
+main().catch((e) => { console.error(e); sorry('Sorry, the 3D viewer could not start on this device.'); });

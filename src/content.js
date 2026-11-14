@@ -263,7 +263,11 @@ export const CONTENT = {
         // softened: neither Continence Health Australia nor Pelvic Floor First gives a count of quick squeezes (CHA only describes the quick lift as "the Knack"). 5 is an animation default; on-screen text says "a few", not a number.
         perDay: 3, // verified: CHA "3 times a day".
         text: 'Squeeze and lift around the wee tube, vagina and back passage. Hold for 3 to 8 seconds, then let go fully. Repeat 8 to 10 times, up to 3 times a day. Add a few quick squeezes.',
+        caution: 'This is a general guide, not a personal programme. If squeezing hurts, or you find it hard to let go, stop and see a pelvic health physio first. Some pelvic floors are too tight rather than too weak, and extra squeezing may not help.',
+        // added after review 2026-11-14: mirrors the "Can pelvic floor muscles be too tight?" FAQ answer so the caveat sits before the guided session, not only in the Ask drawer.
       },
+      trainNote: 'Illustration only. The slider shows the idea that stronger, better-timed muscles close the wee tube more firmly. Real progress is different for everyone and is not this predictable. If leaking carries on, that does not mean you have not tried hard enough: ask for an assessment.',
+      // added after review 2026-11-14: the weeks-to-"held" mapping is an animation, not evidence. Cochrane CD007471: evidence for treating established postnatal leaking is less certain than for prevention.
       cues: [
         'Squeeze and lift, as if stopping wind and the flow of wee at the same time.',
         'Keep your thighs, bottom and tummy relaxed. Nothing above the belly button should tense.',
@@ -315,7 +319,8 @@ export const CONTENT = {
         'You cannot feel your muscles tighten or let go when you try.',
         'Urgent: your bladder feels full but you cannot wee at all. Get medical help straight away, or call 000.',
         // verified: healthdirect.gov.au/urinary-retention: "Seek urgent medical attention if your bladder feels full, but you cannot urinate (wee) at all." and "call triple zero (000)".
-        'Bleeding after birth that carries on beyond 8 weeks and is not a period: see your GP.',
+        'Bleeding after birth that suddenly gets heavier, or keeps going instead of easing: contact your midwife, GP or maternity unit straight away. Do not wait. Bleeding still going at 8 weeks that is not a period also needs a GP check.',
+        // changed after review 2026-11-14: the 8-week line on its own could read as "wait 8 weeks". NICE NG194 (postnatal care) lists sudden or very heavy bleeding, or persistent or increased bleeding, as reasons to seek medical advice without delay. NOT yet checked by a clinician: owner to confirm wording.
         // verified: Goom, Donnelly & Brockwell 2019 guideline lists "Ongoing or increased blood loss beyond 8 weeks postnatal that is not linked to your monthly cycle" among reasons for referral.
       ],
     },

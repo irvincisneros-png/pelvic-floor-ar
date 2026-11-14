@@ -27,6 +27,7 @@
 .pf-grip { width: 44px; height: 5px; border-radius: 3px; background: rgba(255,255,255,.35); }
 .pf-sheet-body { overflow-y: auto; overscroll-behavior: contain; padding: 0 14px calc(16px + env(safe-area-inset-bottom, 0px)); margin-top: -8px; -webkit-overflow-scrolling: touch; user-select: text; -webkit-user-select: text; }
 .pf-takeaway { color: var(--pf-mut); font-size: 13px; margin: 0 0 10px; }
+.pf-note { color: var(--pf-mut); font-size: 12.5px; line-height: 1.4; margin: 0 0 10px; padding: 8px 10px; border-left: 3px solid var(--pf-mut); background: rgba(255,255,255,.05); border-radius: 0 8px 8px 0; }
 .pf-sec { margin: 0 0 12px; }
 .pf-sec-h { font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--pf-mut); margin: 4px 0 6px; font-weight: 700; }
 

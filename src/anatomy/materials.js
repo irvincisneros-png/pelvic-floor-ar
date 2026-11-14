@@ -57,6 +57,7 @@ export function makeMaterial(o) {
     uGlow: { value: 0 },
     uTubeK: { value: o.tube?.k ?? 0 }, uTubeW: { value: o.tube?.w ?? 0 },
     uHotK: { value: o.hotK ?? 0 },
+    uAvulK: { value: o.avulK ?? 0 },
     uAlpha: { value: o.opacity ?? 1 },
     uCap: { value: col(o.color).lerp(col(o.cap ?? o.color), 0.55) },
     uRim: { value: col(o.rim ?? 0xffffff).multiplyScalar(o.rimAmt ?? 0.22) },
@@ -96,7 +97,7 @@ vLocal = (uAnatInv * modelMatrix * vec4(pfPos, 1.0)).xyz;`);
     shader.fragmentShader = header + shader.fragmentShader
       .replace('#include <common>', `#include <common>
 ${CLIP_FRAG_DECL}
-uniform float uTime; uniform float uGlow; uniform float uHotK; uniform float uAlpha;
+uniform float uTime; uniform float uGlow; uniform float uHotK; uniform float uAvulK; uniform float uAlpha;
 uniform vec3 uCap; uniform vec3 uRim; uniform vec3 uTint; uniform float uDim; uniform float uOpacity; uniform float uNoClip;
 uniform float F_wave; uniform float F_waveAmp; uniform float F_hot; uniform float F_thin; uniform float F_avul;
 varying vec3 vRest; varying vec4 vPf; varying vec2 vUvF;
@@ -124,7 +125,7 @@ ${NOISE}`)
       diffuseColor.rgb = mix(diffuseColor.rgb, diffuseColor.rgb * vec3(1.18, 1.05, 1.0) + vec3(0.07, 0.04, 0.03), thinMix);
       #if PF_KIND == 1
         // torn (avulsed) end: frayed, pale and bruised where the muscle has come away from the pubic bone
-        float torn = F_avul * (1.0 - smoothstep(0.0, 0.32, vPf.z)) * step(vRest.x, 0.0) * (1.0 - smoothstep(0.0, 0.7, vPf.y));
+        float torn = F_avul * uAvulK * (1.0 - smoothstep(0.0, 0.32, vPf.z)) * step(vRest.x, 0.0) * (1.0 - smoothstep(0.0, 0.7, vPf.y));
         diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.5, 0.12, 0.2) + 0.25 * pfH, torn * 0.8);
       #endif
     #endif
